@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+
+{% block header %}
+  <h1>{% block title %}Journey Search{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+
+<main>
+    <div class="container py-4">
+      <header class="pb-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+            <span class="fs-4">Journey Search</span>
+        </a>
+      </header>
+      {% if results is defined %}
+      <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5 text-center">
+          <p class="col-md-12 fs-4">Displaying results for:</p>
+          <p class="col-md-12 fs-4">{{ n_name }} -> {{ s_name }}</p>
+          <a class="btn btn-primary btn-lg" href="/search">Make another search</a>
+        </div>
+      </div>
+      <div class="row align-items-md-stretch">
+        
+        {% for i in results %}
+
+            <div class="col-md-6">
+                <div class="h-100 p-5 text-white bg-dark rounded-3">
+                    <h5>{{ i[1] }} -> {{ i[2] }}</h5>
+                    <p><b>Cost:</b> {{ i[4]/i[5] }}</p>
+                    <p>{{ i[3] }}</p>
+                    <a class="btn btn-outline-light" href="/journey/{{ i[0] }}">Display this journey</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+      {% else %}
+      <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5 text-center">
+          <h1 class="display-5 fw-bold">Where to?</h1>
+          <p class="col-md-12 fs-4">Select the neighbourhood and a store to go!</p>
+          
+          <form method = "POST">
+            <div class="row">
+              <div class="col-md-2 mb-3">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="from" class="text-start">From</label>
+                <select class="custom-select d-block w-100" id="neighbourhood_id" name="neighbourhood_id" required>
+                  <option selected="true" disabled="disabled">Please choose</option>
+                    {% for store in stores %}
+                        <option value="{{ store.id }}">{{ store.name }} , {{ store.address }}</option>
+                    {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="To" class="text-start">To</label>
+                <select class="custom-select d-block w-100" id="store_id" name="store_id" required>
+                  <option selected="true" disabled="disabled">Please choose</option>
+                    {% for neighbourhood in neighbourhoods %}
+                        <option value="{{ neighbourhood.id }}">{{ neighbourhood.name }}</option>
+                    {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-2 mb-3">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-lg" type="submit">Search</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+      <br>
+      <div class="row align-items-md-stretch">
+        <div class="col-md-12">
+          <div class="h-100 p-5 text-white bg-dark rounded-3">
+            <h2>Want to drive?</h2>
+            <p>If you want to use your car but share your ride with others you are welcome to create your own journey here!</p>
+            <a class="btn btn-outline-light" href="/create">Create a Journey</a>
+          </div>
+        </div>
+      </div>
+  
+      <footer class="pt-3 mt-4 text-muted border-top">
+        &copy; 2021
+      </footer>
+    </div>
+  </main>
+  
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+
+{% block header %}
+  <h1>{% block title %}Single Journey{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+
+<main>
+    <div class="container py-4">
+        <header class="pb-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+            <span class="fs-4">Display Journey</span>
+        </a>
+        </header>
+  
+    <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+            <h1 class="fs-3 fw-bold">Journey details:</h1>
+            <p class="col-md-12 fs-5"><b>From:</b> {{ neighbourhood.name }}</p>
+            <p class="col-md-12 fs-5"><b>To:</b> {{ store.name }}</p>
+            {% if nr_of_passengers is defined %}
+                <p class="col-md-12 fs-5"><b>Cost:</b> {{ journey.cost/nr_of_passengers }}</p>
+            {% else %}
+                <p class="col-md-12 fs-5"><b>Cost:</b> {{ journey.cost }}</p>
+            {% endif %}
+            <p class="col-md-12 fs-5"><b>Available seats: </b> {{ journey.passenger_limit }} </p>
+            <br>
+            <h4 class="fs-3 fw-bold">Journey notes:</h4>
+            <p class="col-md-12 fs-5"> {{ journey.note }} </p>
+            <br>
+            <h4 class="fs-3 fw-bold">Users in this journey:</h4>
+            <p class="col-md-12 fs-5"><b>Driver:</b> {{ driver.name }} {{ driver.surname }}, {{ driver.email }}</p>
+            {% if journey.passenger_list != none %}
+                {% for passenger in passengers %}
+                    <p class="col-md-12 fs-5"><b>Passenger:</b> {{ passenger[0] }} {{ passenger[1] }}, {{ passenger[2] }}</p>
+                {% endfor %}
+            {% else %}
+                <p class="col-md-12 fs-6"><i>No passenger joined this journey yet</i> </p>
+            {% endif %}
+            
+            <br>
+
+            {% if journey.is_cancelled == 1 %}
+                <button class="btn btn-primary btn-lg" disabled>This journey is cancelled</button> 
+            {% elif is_own == true %}
+                <form method = "POST">
+                    <button class="btn btn-primary btn-lg" type="submit" name="cancel-journey">Cancel this journey</button>
+                </form>
+            {% elif is_passenger == true %}
+                <form method = "POST">
+                    <button class="btn btn-secondary btn-lg" type="submit" name="leave-journey">Leave this journey</button> 
+                </form>
+            {% elif journey.passenger_limit > 0 %}
+                <form method = "POST">
+                    <button class="btn btn-primary btn-lg" type="submit" name="join-journey">Join this journey</button> 
+                </form>
+            {% else %}
+                    <button class="btn btn-primary btn-lg" disabled>This journey is full</button> 
+            {% endif %}
+            
+
+            
+        </div>
+    </div>
+      <div class="row align-items-md-stretch">
+        <div class="col-md-12">
+          <div class="h-100 p-5 text-white bg-dark rounded-3">
+            <h2>Want to check other journeys?</h2>
+            <p>You can go back to journey search anytime.</p>
+            <a class="btn btn-outline-light" href="/search">Browse Journeys</a>
+          </div>
+        </div>
+      </div>
+  
+      <footer class="pt-3 mt-4 text-muted border-top">
+        &copy; 2021
+      </footer>
+    </div>
+  </main>
+  
+
+{% endblock %}
