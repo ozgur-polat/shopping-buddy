@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+
+{% block header %}
+  <h1>{% block title %}Create Journey{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+
+<main>
+    <div class="container py-4">
+      <header class="pb-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+            <span class="fs-4">Create a Store</span>
+        </a>
+      </header>
+  
+      <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5">
+          <h1 class="display-5 fw-bold">Enter the store details</h1>
+          
+          <form method = "POST">
+            <div class="row">
+              <div class="mb-3">
+                <label for="name" class="form-label">Store name</label>
+                <input type="text" class="form-control" id="name" name="name">
+              </div>
+              <div class="mb-3">
+                  <label for="city" class="form-label">City</label>
+                  <input type="text" class="form-control" id="city" name="city">
+              </div>
+              <div class="mb-3">
+                  <label for="postcode" class="form-label">Postcode</label>
+                  <input type="text" class="form-control" id="postcode" name="postcode">
+              </div>
+              <button class="w-100 btn btn-lg btn-primary" type="submit">Create store</button>
+              <div class="form-text text-center">You will be redirected to store page.</div>
+
+            </div>
+
+
+            
+          </form>
+        </div>
+      </div>
+      <div class="row align-items-md-stretch">
+        <div class="col-md-12">
+          <div class="h-100 p-5 text-white bg-dark rounded-3">
+            <h2>Want to check more alternatives?</h2>
+            <p>You can go back to store search anytime.</p>
+            <a class="btn btn-outline-light" href="/stores">Browse Available Stores</a>
+          </div>
+        </div>
+      </div>
+  
+      <footer class="pt-3 mt-4 text-muted border-top">
+        &copy; 2021
+      </footer>
+    </div>
+  </main>
+  
+
+{% endblock %}

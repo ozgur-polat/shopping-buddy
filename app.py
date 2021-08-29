@@ -1,8 +1,16 @@
 from flask import Flask, render_template, redirect, url_for, request, g
 from flask_login import login_required, current_user, login_user, logout_user
-from models import User,Store,Neighbourhood,Journey,db,login
+from models import User,Store,JourneyRequest,Journey,db,login
+from PostcodeConverter import PostcodeConverter
+from dateutil import parser
 import sqlite3
 import os
+import datetime
+import numpy as np
+import pandas as pd
+import minmax_kmeans
+from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 
 # currentdirectory = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,66 +36,43 @@ def main():
     return render_template("index.html")
 
 
-@app.route('/search', methods = ['POST', 'GET'])
-@login_required
-def search():
-    stores = Store.query.all()
-    neighbourhoods = Neighbourhood.query.all()
-
-    if request.method == 'POST':
-        neighbourhood_id = request.form['neighbourhood_id']
-        store_id = request.form['store_id']
-        n_name = Neighbourhood.query.get(neighbourhood_id).name
-        s_name = Store.query.get(store_id).name
-        journeys = Journey.query.filter_by(n_id=neighbourhood_id,s_id=store_id)
-        results = []
-
-        for journey in journeys:
-            current_journey=[]
-            current_journey.append(journey.id)
-            current_journey.append(n_name)
-            current_journey.append(s_name)
-            current_journey.append(journey.note)
-            current_journey.append(journey.cost)
-            passenger_ids = journey.passenger_list.split(",")
-            nr_of_passengers=len(passenger_ids)+1
-            current_journey.append(nr_of_passengers)
-            results.append(current_journey)
-        return render_template('search.html', stores=stores, neighbourhoods=neighbourhoods,results=results, s_name=s_name, n_name=n_name)
-
-    else:
-        return render_template('search.html', stores=stores, neighbourhoods=neighbourhoods)
- 
- 
 @app.route('/login', methods = ['POST', 'GET'])
 def login():
     if current_user.is_authenticated:
-        return redirect('/search')
+        return redirect('/stores')
      
     if request.method == 'POST':
         email = request.form['email']
         user = User.query.filter_by(email = email).first()
         if user is not None and user.check_password(request.form['password']):
             login_user(user)
-            return redirect('/search')
+            return redirect('/stores')
      
     return render_template('login.html')
  
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     if current_user.is_authenticated:
-        return redirect('/search')
+        return redirect('/stores')
      
     if request.method == 'POST':
         name = request.form['name']
         surname = request.form['surname']
         email = request.form['email']
         password = request.form['password']
+        city = request.form['city']
+        postcode = request.form['postcode']
  
         if User.query.filter_by(email=email).first():
             return ('Email already Present')
-             
-        user = User(email=email, name=name, surname=surname)
+
+        # here the function to get the lat long and pusherem
+        post_code_converter = PostcodeConverter()
+        lat, lon = post_code_converter.convert_postcode_to_lat_long(postcode, city)
+
+        
+
+        user = User(email=email, name=name, surname=surname, city=city, postcode=postcode, lat=lat, lon=lon)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -107,9 +92,23 @@ def profile(id):
     user = User.query.filter_by(id=id).first_or_404()
     all_journeys = Journey.query.all()
     joined_journey_ids = []
-    created_journey_ids = []
     joined_journeys = []
-    created_journeys = []
+
+    all_journey_requests = JourneyRequest.query.filter_by(requester_id=id).all()
+
+    journey_requests = []
+
+    if all_journey_requests is not None:
+        for journey in all_journey_requests:
+            store=Store.query.filter_by(id=journey.store_id).first()
+            journey_request = []
+            journey_request.append(store.id)
+            journey_request.append(store.name)
+            journey_request.append(store.city)
+            journey_request.append(store.postcode)
+            journey_request.append(journey.date)
+
+            journey_requests.append(journey_request)
 
     if all_journeys is not None:
         for journey in all_journeys:
@@ -125,117 +124,88 @@ def profile(id):
             temp = Journey.query.get(joined_journey_id)
             current_journey=[]
             current_journey.append(joined_journey_id)
-            current_journey.append(Neighbourhood.query.get(temp.n_id).name)
             current_journey.append(Store.query.get(temp.s_id).name)
-            current_journey.append(temp.note)
-            current_journey.append(temp.cost)
-            passenger_ids = temp.passenger_list.split(",")
-            nr_of_passengers=len(passenger_ids)+1
-            current_journey.append(nr_of_passengers)
+            current_journey.append(Store.query.get(temp.s_id).address)
+            current_journey.append(temp.date)
             joined_journeys.append(current_journey)
 
-        for created_journey_id in created_journey_ids:
-            temp = Journey.query.get(created_journey_id)
-            current_journey=[]
-            current_journey.append(created_journey_id)
-            current_journey.append(Neighbourhood.query.get(temp.n_id).name)
-            current_journey.append(Store.query.get(temp.s_id).name)
-            current_journey.append(temp.note)
-            current_journey.append(temp.cost)
-            passenger_ids = temp.passenger_list.split(",")
-            nr_of_passengers=len(passenger_ids)+1
-            current_journey.append(nr_of_passengers)
-            created_journeys.append(current_journey)
+    return render_template('profile.html', user=user, joined_journeys=joined_journeys, journey_requests=journey_requests)
 
-    return render_template('profile.html', user=user, created_journeys=created_journeys, joined_journeys=joined_journeys)
-
-
-@app.route('/create', methods=['POST', 'GET'])
+ 
+@app.route('/stores')
 @login_required
-def create():
-    
-    if request.method == 'POST':
-        #Getting info from the from elements
-        neighbourhood_id = request.form['neighbourhood_id']
-        store_id = request.form['store_id']
-        cost = request.form['cost']
-        passenger_limit = request.form['passenger_limit']
-        note = request.form['note']
-        
-        driver_id = current_user.get_id()
-        n_id = Neighbourhood.query.filter_by(id=neighbourhood_id).first_or_404().id
-        s_id = Store.query.filter_by(id=store_id).first_or_404().id
-     
-        journey = Journey(driver_id=driver_id, n_id=n_id, s_id=s_id, cost=cost, passenger_limit=passenger_limit, note=note)
-        db.session.add(journey)
-        db.session.commit()
-        return redirect('/journey/'+journey.id)  #REDIRECT HERE TO THE CREATED JOURNEY
-    else:
-        stores = Store.query.all()
-        neighbourhoods = Neighbourhood.query.all()
-        return render_template('create.html', stores=stores, neighbourhoods=neighbourhoods)
+def stores():
+    stores = Store.query.all()
+    return render_template('stores.html', stores=stores, user_id = int(current_user.get_id()))
 
-@app.route('/journey/<id>', methods=['POST', 'GET'])
+@app.route('/store/<id>', methods=['POST', 'GET'])
 @login_required
-def journey(id):
-    #Query the journey info first
-    journey = Journey.query.filter_by(id=id).first()
-    driver = User.query.filter_by(id=journey.driver_id).first()
-    neighbourhood = Neighbourhood.query.filter_by(id=journey.n_id).first()
-    store = Store.query.filter_by(id=journey.s_id).first()
-    is_own=False
-    is_passenger=False
-
-
-    #Check if the user is displaying his own journey
-    if journey.driver_id == int(current_user.get_id()):
-        is_own=True
-
-    #Check if the user is already joined this journey
-    if journey.passenger_list is not None:
-        passenger_ids = journey.passenger_list.split(",")
-
-        if current_user.get_id() in passenger_ids:
-            is_passenger=True
-    
-
-    #If request is to join this journey and the user does not own the journey
+def store(id):
+    store = Store.query.get(id)
     if request.method == 'POST':
-        if 'join-journey' in request.form and is_own == False:
-            if journey.passenger_list is None:
-                journey.passenger_list = current_user.get_id()
-            else:
-                journey.passenger_list = journey.passenger_list+","+current_user.get_id()
-            journey.passenger_limit = int(journey.passenger_limit)-1
+        date = request.form['date']
+        date = date[0:10]
+        date = datetime.datetime(int(date[0:4]), int(date[5:7]), int(date[8:10]))
 
-        if 'leave-journey' in request.form:
-            passenger_ids = journey.passenger_list.split(",")
-            passenger_ids.remove(current_user.get_id())
-            if(len(passenger_ids)>0):
-                journey.passenger_list = ','.join(passenger_ids)
-            else:
-                journey.passenger_list = None
-            journey.passenger_limit = int(journey.passenger_limit)+1
-            
-
-        if 'cancel-journey' in request.form:
-            journey.is_cancelled=1
+        user = User.query.get(current_user.get_id())
         
+        journey_request = JourneyRequest(requester_id=user.id,requester_lat=float(user.lat), requester_lon=float(user.lon), store_id = store.id, store_name = store.name, store_lat=float(store.lat), store_lon=float(store.lon), date=date)
+        db.session.add(journey_request)
         db.session.commit()
-        return redirect('/journey/'+id)
+        return redirect('/profile/'+current_user.get_id()) ## RETURN HERE TO PROFILE PAGE TO LIST THE REQUESTS AND ASSIGNED JOURNEYS
     else:
-        if journey.passenger_list is None:
-            return render_template('journey.html', journey=journey, driver=driver, neighbourhood=neighbourhood, store=store, is_own=is_own, is_passenger=is_passenger)
+        return render_template('store.html', store=store)
+
+@app.route('/create-store', methods=['POST', 'GET'])
+@login_required
+def create_store():
+    if int(current_user.get_id()) == 1:
+        if request.method == 'POST':
+            name = request.form['name']
+            city = request.form['city']
+            postcode = request.form['postcode']
             
+            post_code_converter = PostcodeConverter()
+            lat, lon = post_code_converter.convert_postcode_to_lat_long(postcode, city)
+
+            store = Store(name=name, city=city, postcode=postcode, lat=lat, lon=lon)
+            db.session.add(store)
+            db.session.commit()
+            return redirect('/store/'+ str(store.id))
         else:
-            passenger_ids = journey.passenger_list.split(",")
-            nr_of_passengers=len(passenger_ids)+1
-            passengers = []
+            return render_template('create-store.html')
+    else:
+        return redirect('/stores')
 
-            for i in passenger_ids:
-                current_passenger = User.query.filter_by(id=i).first()
-                current_passenger_info=[current_passenger.name, current_passenger.surname, current_passenger.email]
-                passengers.append(current_passenger_info)
 
-            return render_template('journey.html', journey=journey, driver=driver, neighbourhood=neighbourhood, store=store, passengers=passengers, is_own=is_own, is_passenger=is_passenger, nr_of_passengers=nr_of_passengers)
+@app.route('/assign')
+@login_required
+def assign():
+
+    nr_users_to_generate = 200
+
+    try:
+        df = pd.read_pickle('test_df.pkl')
+    except:
+        lat = np.random.uniform(low=52.171713, high=52.301421, size=(nr_users_to_generate,))
+        long = np.random.uniform(low=20.937595, high=21.094625, size=(nr_users_to_generate,))
+        coordinates = np.array((lat,long)).T
+        df = pd.DataFrame(coordinates, columns=['lat','long'])
+
+        df['cluster_id'] = minmax_kmeans.get_clusters(df, k=len(df)//4, min_size=4, max_size=4,num_iter=5)
+        df.to_pickle('test_df.pkl')
+
+    BBox = (df.long.min(),df.long.max(),df.lat.min(), df.lat.max())
+
+    warsaw_map = plt.imread('static/warsaw_map.png')
+
+    fig, ax = plt.subplots(figsize = (8,7))
+    ax.scatter(df.long, df.lat, zorder=1, alpha= 0.9, c=df.cluster_id, s=20, cmap='tab20')
+    ax.set_title('Plotting Members with Clusters on Warsaw Map')
+    ax.set_xlim(BBox[0],BBox[1])
+    ax.set_ylim(BBox[2],BBox[3])
+    ax.imshow(warsaw_map, zorder=0, extent = BBox, aspect= 'equal')
+    plt.savefig('static/test.png')
+
+    return render_template('assign.html')
     

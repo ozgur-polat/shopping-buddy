@@ -20,53 +20,60 @@
         <div class="container-fluid py-5">
           <h1 class="display-5 fw-bold">{{user.name}} {{user.surname}}</h1>
           <p class="col-md-8 fs-4">{{user.email}}</p>
+          <p class="col-md-8 fs-4">{{user.city}}</p>
+          <p class="col-md-8 fs-4">{{user.postcode}}</p>
         </div>
       </div>
-    {% if created_journeys|length > 0 %}
-      <header class="pb-3 mb-4 border-bottom">
-        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
-            <span class="fs-4">Journeys Created By {{ user.name }}</span>
-        </a>
-      </header>
-      <div class="row align-items-md-stretch">
-        
-            {% for i in created_journeys  %}
-
-                <div class="col-md-6">
-                    <div class="h-100 p-5 text-white bg-dark rounded-3">
-                        <h5>{{ i[1] }} -> {{ i[2] }}</h5>
-                        <p><b>Cost:</b> {{ i[4]/i[5] }}</p>
-                        <p>{{ i[3] }}</p>
-                        <a class="btn btn-outline-light" href="/journey/{{ i[0] }}">Display this journey</a>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        <br>
-        <br>
-    {% endif %}
+    
 
     {% if joined_journeys|length > 0 %}
     
       <header class="pb-3 mb-4 border-bottom">
         <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
-            <span class="fs-4">Journeys Joined By {{ user.name }}</span>
+            <span class="fs-4">Journeys that {{ user.name }} is assigned to:</span>
         </a>
       </header>
       <div class="row align-items-md-stretch">
         
-            {% for i in joined_journeys  %}
+            {% for journey in joined_journeys  %}
 
-                <div class="col-md-6">
+                <div class="col-md-6 mb-3">
                     <div class="h-100 p-5 text-white bg-dark rounded-3">
-                        <h5>{{ i[1] }} -> {{ i[2] }}</h5>
-                        <p><b>Cost:</b> {{ i[4]/i[5] }}</p>
-                        <p>{{ i[3] }}</p>
-                        <a class="btn btn-outline-light" href="/journey/{{ i[0] }}">Display journey</a>
+                        <h5>To: {{ journey[1] }}</h5>
+                        <p><b>City:</b> {{ journey[2] }}</p>
+                        <p><b>Postcode:</b> {{ journey[3] }}</p>
+                        <p><b>Date:</b> {{ journey[4] }}</p>
+                        <p><b>Peers:</b> {{ journey[5] }}</p>
+                        <a class="btn btn-outline-light" href="/store/{{ journey[0] }}">Display this store</a>
                     </div>
                 </div>
             {% endfor %}
         </div>
+    {% endif %}
+
+    {% if journey_requests|length > 0 %}
+      <header class="pb-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+            <span class="fs-4">{{ user.name }}'s journey requests:</span>
+        </a>
+      </header>
+      <div class="row align-items-md-stretch">
+        
+            {% for journey in journey_requests  %}
+
+                <div class="col-md-6 mb-3">
+                    <div class="h-100 p-5 text-white bg-dark rounded-3">
+                        <h5>To: {{ journey[1] }}</h5>
+                        <p><b>City:</b> {{ journey[2] }}</p>
+                        <p><b>Postcode:</b> {{ journey[3] }}</p>
+                        <p><b>Date:</b> {{ journey[4] }}</p>
+                        <a class="btn btn-outline-light" href="/store/{{ journey[0] }}">Display this store</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <br>
+        <br>
     {% endif %}
       
   

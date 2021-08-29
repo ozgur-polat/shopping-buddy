@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+
+{% block header %}
+  <h1>{% block title %}Stores{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+
+<main>
+    <div class="container py-4">
+      <header class="pb-3 mb-4 border-bottom">
+        <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+            <span class="fs-4">Available Stores</span>
+        </a>
+      </header>
+      {% if stores|length > 0 %}
+      <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5 text-center">
+          <p class="col-md-12 fs-4">Available stores are here</p>
+          <p class="col-md-12 fs-6">Select the store you would like to go.</p>
+            <br>
+          <p class="col-md-12 fs-6">Couldn't fint what you're looking for?</p>
+          <a class="btn btn-outline-primary" href="/create-store">Create a New Store</a>
+        </div>
+      </div>
+      <div class="row align-items-md-stretch">
+        
+        {% for store in stores %}
+
+            <div class="col-md-6 mb-3">
+                <div class="h-100 p-5 text-white bg-dark rounded-3">
+                    <h5>{{ store.name }}</h5>
+                    <p>{{ store.city }}</p>
+                    <p>{{ store.postcode }}</p>
+                    <a class="btn btn-outline-light" href="/store/{{ store.id }}">Select the store</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+      {% else %}
+      <div class="p-5 mb-4 bg-light rounded-3">
+        <div class="container-fluid py-5 text-center">
+          <p class="col-md-12 fs-4">Uh oh! No stores available</p>
+          <p class="col-md-12 fs-6">Currently there is not any store available in your area.</p>
+            <a class="btn btn-outline-primary" href="/create-store">Create a New Store</a>
+        </div>
+      </div>
+      {% endif %}
+      <br>
+  
+      <footer class="pt-3 mt-4 text-muted border-top">
+        &copy; 2021
+      </footer>
+    </div>
+  </main>
+  
+
+{% endblock %}

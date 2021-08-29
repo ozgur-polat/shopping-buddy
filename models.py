@@ -13,7 +13,11 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(100))
     surname = db.Column(db.String(100))
     password_hash = db.Column(db.String())
-    journeys = db.relationship('Journey', backref='user', lazy=True)
+    city = db.Column(db.String(100))
+    postcode = db.Column(db.String(100))
+    lat = db.Column(db.Float())
+    lon = db.Column(db.Float())
+    journey = db.relationship('JourneyRequest', backref='user', lazy=True)
  
     def set_password(self,password):
         self.password_hash = generate_password_hash(password)
@@ -27,27 +31,33 @@ def load_user(id):
     return User.query.get(int(id))
 
 
-class Neighbourhood(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    journeys = db.relationship('Journey', backref='neighbourhood', lazy=True)
-
 class Store(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    address = db.Column(db.String(120))
-    journeys = db.relationship('Journey', backref='store', lazy=True)
+    city = db.Column(db.String(100))
+    postcode = db.Column(db.String(100))
+    lat = db.Column(db.Float())
+    lon = db.Column(db.Float())
+    journey = db.relationship('JourneyRequest', backref='store', lazy=True)
+    journey = db.relationship('Journey', backref='store', lazy=True)
+
+
+class JourneyRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requester_lat = db.Column(db.Float())
+    requester_lon = db.Column(db.Float())
+    store_id = db.Column(db.Integer, db.ForeignKey('store.id'), nullable=False)
+    store_name = db.Column(db.String(100))
+    store_lat = db.Column(db.Float())
+    store_lon = db.Column(db.Float())
+    date = db.Column(db.DateTime)
+
 
 class Journey(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
-    driver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    n_id = db.Column(db.Integer, db.ForeignKey('neighbourhood.id'), nullable=False)
     s_id = db.Column(db.Integer, db.ForeignKey('store.id'), nullable=False)
-    cost = db.Column(db.Integer)
-    passenger_limit = db.Column(db.Integer)
-    note = db.Column(db.String(100))
     passenger_list = db.Column(db.String(100))
-    is_cancelled = db.Column(db.Integer)
+    date = db.Column(db.DateTime)
